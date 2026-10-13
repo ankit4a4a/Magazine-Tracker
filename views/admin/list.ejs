@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Magazine List - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = filterType %>
+    <%- include('../partials/adminSidebar') %>
+
+    
+    <main class="flex-1 min-w-0 mt-main">
+      <%
+        var _stateOf = function (m) {
+          if (m.status !== 'Printed') return 'progress';
+          return m.finalStatus === 'Delivered' ? 'delivered' : 'transit';
+        };
+        var _stateLabel = { progress: 'In Progress', transit: 'On the way', delivered: 'Delivered' };
+      %>
+      <div class="mt-page-head">
+        <h1 class="mt-page-title">
+          <% if (filterType === 'printed') { %>Printed Magazines
+          <% } else if (filterType === 'not-printed') { %>Not Printed (In Progress)
+          <% } else { %>All Magazines
+          <% } %>
+          <span class="mt-count"><%= magazines.length %></span>
+        </h1>
+        <a href="/admin/add" class="mt-btn mt-btn-primary">
+          <svg class="mt-icon"><use href="#i-plus"/></svg>Add New
+        </a>
+      </div>
+
+      <form method="GET" action="/admin/list/<%= filterType %>" class="mt-search" style="max-width:460px;margin-bottom:24px" role="search">
+        <label class="mt-search-field">
+          <svg class="mt-icon"><use href="#i-search"/></svg>
+          <input type="text" name="q" value="<%= q %>" placeholder="Search name or mobile number" aria-label="Search magazines" />
+        </label>
+      </form>
+
+      <div class="mt-grid">
+        <% magazines.forEach(m => {
+             var state = _stateOf(m);
+             var step = state === 'progress' ? 0 : (state === 'transit' ? 1 : 2);
+        %>
+          <div class="mt-card is-<%= state %>">
+            <div class="mt-card-head">
+              <div class="mt-card-title">
+                <span class="mt-ref">#<%= m._id.toString().slice(-4).toUpperCase() %></span>
+                <h3 class="mt-card-name"><%= m.clientName %></h3>
+                <p class="mt-card-phone"><svg class="mt-icon"><use href="#i-phone"/></svg><%= m.clientMobile %></p>
+              </div>
+              <span class="mt-pill"><%= _stateLabel[state] %></span>
+            </div>
+
+            <dl class="mt-facts">
+              <div><dt>Volume No</dt><dd><%= m.volumeNo || '-' %></dd></div>
+              <div><dt>Slot No</dt><dd><%= m.slotNo || '-' %></dd></div>
+              <div><dt>Added On</dt><dd class="is-date"><%= m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '-' %></dd></div>
+            </dl>
+
+            <dl class="mt-facts is-two">
+              <div><dt>Employee</dt><dd><%= m.employeeName %></dd></div>
+              <div><dt>Tracking No</dt><dd><%= m.trackingNumber || '-' %></dd></div>
+              <div><dt>Final Status</dt><dd class="<%= m.finalStatus === 'Delivered' ? 'is-good' : 'is-bad' %>"><%= m.finalStatus %></dd></div>
+            </dl>
+
+            <ol class="mt-track" aria-label="Progress: <%= _stateLabel[state] %>">
+              <li class="<%= step > 0 ? 'is-done' : 'is-current' %>">Printing</li>
+              <li class="<%= step > 1 ? 'is-done' : (step === 1 ? 'is-current' : '') %>">On the way</li>
+              <li class="<%= step === 2 ? 'is-current' : '' %>">Delivered</li>
+            </ol>
+
+            <div class="mt-actions">
+              <% if (m.status === 'Printed' && m.trackingNumber) { %>
+                <a href="/admin/view/<%= m._id %>" class="mt-act is-view"><svg class="mt-icon"><use href="#i-eye"/></svg>View Tracking</a>
+              <% } %>
+              <a href="/admin/edit/<%= m._id %>" class="mt-act is-edit"><svg class="mt-icon"><use href="#i-pencil"/></svg>Edit</a>
+              <% if (m.trackingNumber && m.finalStatus !== 'Delivered') { %>
+                <form method="POST" action="/admin/refresh/<%= m._id %>">
+                  <button type="submit" class="mt-act is-refresh" title="Fetch the latest tracking status now"><svg class="mt-icon"><use href="#i-refresh"/></svg>Refresh</button>
+                </form>
+              <% } %>
+              <form method="POST" action="/admin/delete/<%= m._id %>" class="is-push"
+                onsubmit="return confirm('Delete this entry?');">
+                <button type="submit" class="mt-act is-delete"><svg class="mt-icon"><use href="#i-trash"/></svg>Delete</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+
+        <% if (magazines.length === 0) { %>
+          <div class="mt-empty">
+            <strong>No entries found.</strong>
+            <span>Try a different search or add a new magazine entry.</span>
+          </div>
+        <% } %>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

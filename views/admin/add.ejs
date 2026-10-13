@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Add Magazine - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'add' %>
+    <%- include('../partials/adminSidebar') %>
+
+
+    
+    <main class="flex-1 min-w-0 p-8">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6">Add Magazine Entry</h1>
+
+      <% if (error) { %>
+        <div class="bg-red-100 text-red-700 text-sm px-3 py-2 rounded mb-4 max-w-xl"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/admin/add" id="magazineForm" class="bg-white rounded-xl shadow p-6 max-w-xl space-y-4">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
+          <select name="employeeId" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="" disabled selected>Select an employee...</option>
+            <% users.forEach(u => { %>
+              <option value="<%= u._id %>"><%= u.name %> (<%= u.phone %>)</option>
+            <% }) %>
+          </select>
+          <% if (users.length === 0) { %>
+            <p class="text-xs text-red-500 mt-1">No users added yet. <a href="/admin/users/add" class="underline">Add one first</a>.</p>
+          <% } %>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+          <input type="text" name="clientName" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Client Mobile Number</label>
+          <input type="text" name="clientMobile" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Magazine Cover Page Volume No</label>
+            <input type="text" name="volumeNo"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Slot No</label>
+            <input type="text" name="slotNo"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" id="statusSelect"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="In Progress">In Progress</option>
+            <option value="Printed">Printed</option>
+          </select>
+        </div>
+
+        <div id="trackingField" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tracking Number (India Post)</label>
+          <div class="flex gap-2">
+            <input type="text" name="trackingNumber" id="trackingNumberInput" placeholder="e.g. EE123456789IN"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button type="button" id="fetchBtn"
+              class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap">
+              🔍 Fetch Details
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Enter the tracking number and click “Fetch Details” to view the latest India Post status.</p>
+
+          <!-- Live preview area -->
+          <div id="trackingPreview" class="mt-3 hidden"></div>
+
+          <!-- Fetched raw JSON gets stored here, so we don't call the API twice -->
+          <input type="hidden" name="fetchedStatusJson" id="fetchedStatusJson" value="" />
+        </div>
+
+        <button type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-lg">
+          Save Entry
+        </button>
+      </form>
+    </main>
+  </div>
+
+  <script src="/js/tracking-stepper.js"></script>
+  <script>
+    const statusSelect = document.getElementById('statusSelect');
+    const trackingField = document.getElementById('trackingField');
+    const trackingNumberInput = document.getElementById('trackingNumberInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const trackingPreview = document.getElementById('trackingPreview');
+    const fetchedStatusJson = document.getElementById('fetchedStatusJson');
+
+    function toggleTrackingField() {
+      if (statusSelect.value === 'Printed') {
+        trackingField.classList.remove('hidden');
+      } else {
+        trackingField.classList.add('hidden');
+      }
+    }
+    statusSelect.addEventListener('change', toggleTrackingField);
+    toggleTrackingField();
+
+    // Whenever the tracking number is edited, any previously fetched
+    // preview becomes stale — clear it so we don't save wrong data.
+    trackingNumberInput.addEventListener('input', () => {
+      fetchedStatusJson.value = '';
+      trackingPreview.classList.add('hidden');
+      trackingPreview.innerHTML = '';
+    });
+
+    fetchBtn.addEventListener('click', async () => {
+      const trackingNumber = trackingNumberInput.value.trim();
+      if (!trackingNumber) {
+        alert('Please enter a tracking number first.');
+        return;
+      }
+
+      fetchBtn.disabled = true;
+      fetchBtn.textContent = '⏳ Fetching...';
+      trackingPreview.classList.remove('hidden');
+      trackingPreview.innerHTML = '<p class="text-sm text-gray-400">Fetching India Post status...</p>';
+
+      try {
+        const res = await fetch(
+          '/admin/api/track/' + encodeURIComponent(trackingNumber) + '?t=' + Date.now(),
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+
+        fetchedStatusJson.value = JSON.stringify(data);
+
+        if (data.error) {
+          trackingPreview.replaceChildren();
+          const errorBox = document.createElement('div');
+          errorBox.className = 'bg-red-50 text-red-700 text-sm rounded-lg p-3';
+          errorBox.textContent = '⚠️ ' + data.error;
+          trackingPreview.appendChild(errorBox);
+        } else {
+          trackingPreview.replaceChildren(renderTrackingStepperCard(data));
+        }
+      } catch (err) {
+        trackingPreview.replaceChildren();
+        const errorBox = document.createElement('div');
+        errorBox.className = 'bg-red-50 text-red-700 text-sm rounded-lg p-3';
+        errorBox.textContent = '⚠️ Fetch failed: ' + err.message;
+        trackingPreview.appendChild(errorBox);
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.textContent = '🔍 Fetch Details';
+      }
+    });
+  </script>
+</body>
+</html>

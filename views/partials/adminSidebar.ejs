@@ -1,0 +1,63 @@
+<%- include('iconSprite') %>
+<% var _active = (typeof active !== 'undefined') ? active : ''; %>
+
+<div class="mt-mobilebar">
+  <button type="button" class="mt-menu-btn" id="mtMenuBtn" aria-label="Open menu" aria-controls="mtSidebar" aria-expanded="false">
+    <svg class="mt-icon"><use href="#i-menu"/></svg>
+  </button>
+  <span class="mt-mark"><svg class="mt-icon"><use href="#i-book"/></svg></span>
+  <span class="mt-brand-name">Magazine Tracker</span>
+</div>
+
+<aside class="mt-sidebar" id="mtSidebar">
+  <a href="/admin/dashboard" class="mt-brand">
+    <span class="mt-mark"><svg class="mt-icon"><use href="#i-book"/></svg></span>
+    <span class="mt-brand-name">Magazine Tracker</span>
+  </a>
+  <div class="mt-side-user">Admin: <strong><%= adminUsername %></strong></div>
+
+  <nav class="mt-nav" aria-label="Admin menu">
+    <a href="/admin/dashboard" class="<%= _active === 'dashboard' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-dashboard"/></svg>Dashboard
+    </a>
+    <a href="/admin/add" class="<%= _active === 'add' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-plus"/></svg>Add Magazine
+    </a>
+    <a href="/admin/list/all" class="<%= _active === 'all' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-list"/></svg>All Magazines
+    </a>
+    <a href="/admin/list/printed" class="<%= _active === 'printed' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-check"/></svg>Printed
+    </a>
+    <a href="/admin/list/not-printed" class="<%= _active === 'not-printed' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-clock"/></svg>Not Printed
+    </a>
+    <a href="/admin/users" class="<%= _active === 'users' ? 'is-active' : '' %>">
+      <svg class="mt-icon"><use href="#i-users"/></svg>Users
+    </a>
+  </nav>
+
+  <div class="mt-side-foot">
+    <form method="POST" action="/admin/logout" style="margin:0">
+      <button type="submit" class="mt-logout">
+        <svg class="mt-icon"><use href="#i-logout"/></svg>Logout
+      </button>
+    </form>
+  </div>
+</aside>
+<div class="mt-scrim" id="mtScrim"></div>
+<script>
+  (function () {
+    var btn = document.getElementById('mtMenuBtn');
+    var side = document.getElementById('mtSidebar');
+    var scrim = document.getElementById('mtScrim');
+    if (!btn || !side) return;
+    function setOpen(open) {
+      side.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!side.classList.contains('is-open')); });
+    if (scrim) scrim.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>

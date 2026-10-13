@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Admin Dashboard - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'dashboard' %>
+    <%- include('../partials/adminSidebar') %>
+
+    <%
+      var _total = stats.total || 0;
+      var _printed = stats.printed || 0;
+      var _inProgress = stats.inProgress || 0;
+      var _delivered = stats.delivered || 0;
+      var _transit = Math.max(_printed - _delivered, 0);
+      var _rate = _total ? Math.round((_delivered / _total) * 100) : 0;
+    %>
+
+    <main class="flex-1 min-w-0 mt-main">
+      <%- include('../partials/appHeader', { headerName: adminUsername, headerVariant: 'admin' }) %>
+
+      <section class="mt-hero" aria-label="Magazine overview">
+        <div class="mt-hero-top">
+          <div>
+            <p class="mt-hero-label">Total Clients</p>
+            <p class="mt-hero-number"><%= _total %></p>
+            <p class="mt-hero-sub"><strong><%= _printed %></strong> printed so far, <strong><%= _rate %>%</strong> delivered</p>
+          </div>
+          <a href="/admin/add" class="mt-btn mt-btn-primary">
+            <svg class="mt-icon"><use href="#i-plus"/></svg>Add New Magazine Entry
+          </a>
+        </div>
+
+        <div class="mt-pipeline" role="img"
+             aria-label="<%= _inProgress %> in progress, <%= _transit %> on the way, <%= _delivered %> delivered">
+          <% if (_inProgress > 0) { %><span class="mt-seg is-progress" style="--n: <%= _inProgress %>; --d: 0s"></span><% } %>
+          <% if (_transit > 0) { %><span class="mt-seg is-transit" style="--n: <%= _transit %>; --d: .12s"></span><% } %>
+          <% if (_delivered > 0) { %><span class="mt-seg is-delivered" style="--n: <%= _delivered %>; --d: .24s"></span><% } %>
+        </div>
+
+        <div class="mt-stages">
+          <a href="/admin/list/not-printed" class="mt-stage is-progress">
+            <span class="mt-stage-label">In Progress</span>
+            <span class="mt-stage-number"><%= _inProgress %></span>
+            <span class="mt-stage-desc">Being printed</span>
+          </a>
+          <a href="/admin/list/printed" class="mt-stage is-transit">
+            <span class="mt-stage-label">On the way</span>
+            <span class="mt-stage-number"><%= _transit %></span>
+            <span class="mt-stage-desc">Printed, not delivered yet</span>
+          </a>
+          <a href="/admin/list/printed" class="mt-stage is-delivered">
+            <span class="mt-stage-label">Delivered</span>
+            <span class="mt-stage-number"><%= _delivered %></span>
+            <span class="mt-stage-desc">Reached the client</span>
+          </a>
+        </div>
+      </section>
+
+      <div class="mt-shortcuts">
+        <a href="/" target="_blank" rel="noopener" class="mt-shortcut">
+          <span class="mt-shortcut-icon"><svg class="mt-icon"><use href="#i-external"/></svg></span>
+          <span class="mt-shortcut-text">
+            <span class="mt-shortcut-title">View Employee Dashboard</span>
+            <span class="mt-shortcut-desc">Opens in a new tab</span>
+          </span>
+          <svg class="mt-icon"><use href="#i-chevron"/></svg>
+        </a>
+        <a href="/admin/tracking-usage" class="mt-shortcut">
+          <span class="mt-shortcut-icon"><svg class="mt-icon"><use href="#i-key"/></svg></span>
+          <span class="mt-shortcut-text">
+            <span class="mt-shortcut-title">Tracking API Usage</span>
+            <span class="mt-shortcut-desc">Check how much of each key is used</span>
+          </span>
+          <svg class="mt-icon"><use href="#i-chevron"/></svg>
+        </a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

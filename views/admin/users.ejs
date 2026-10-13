@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Users - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'users' %>
+    <%- include('../partials/adminSidebar') %>
+
+    <main class="flex-1 min-w-0 p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Users (Employees)</h1>
+        <a href="/admin/users/add" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold">
+          + Add User
+        </a>
+      </div>
+
+      
+      <% if (error) { %>
+        <div class="bg-red-100 text-red-700 text-sm px-3 py-2 rounded mb-4 max-w-xl"><%= error %></div>
+      <% } %>
+
+      <p class="text-sm text-gray-500 mb-4">
+        Each user can log in at <span class="font-mono">/login</span> with their phone number + password, and will
+        only see the clients assigned to them (chosen from this list on Add/Edit Magazine).
+      </p>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-left text-gray-600">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Name</th>
+              <th class="px-4 py-3 font-semibold">Phone Number</th>
+              <th class="px-4 py-3 font-semibold">Added On</th>
+              <th class="px-4 py-3 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach(u => { %>
+              <tr class="border-t border-gray-100">
+                <td class="px-4 py-3 font-medium text-gray-800"><%= u.name %></td>
+                <td class="px-4 py-3 text-gray-600"><%= u.phone %></td>
+                <td class="px-4 py-3 text-gray-500"><%= new Date(u.createdAt).toLocaleDateString('en-IN') %></td>
+                <td class="px-4 py-3 text-right space-x-3">
+                  <a href="/admin/users/edit/<%= u._id %>" class="text-indigo-600 hover:underline font-semibold">✏️ Edit</a>
+                  <form method="POST" action="/admin/users/delete/<%= u._id %>" class="inline"
+                    onsubmit="return confirm('Delete this user? Magazines already assigned to them will keep their name but lose login access.');">
+                    <button type="submit" class="text-red-600 hover:underline font-semibold">🗑️ Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+
+            <% if (users.length === 0) { %>
+              <tr>
+                <td colspan="4" class="px-4 py-8 text-center text-gray-400">No users added yet.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title><%= magazine.clientName %> - Details</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <%- include('../partials/iconSprite') %>
+  <%- include('../partials/appHeader', { headerName: userName, headerVariant: 'employee' }) %>
+
+  <%
+    var _state = magazine.status !== 'Printed' ? 'progress' : (magazine.finalStatus === 'Delivered' ? 'delivered' : 'transit');
+    var _label = { progress: 'In Progress', transit: 'On the way', delivered: 'Delivered' }[_state];
+  %>
+
+  <main class="mt-container is-narrow">
+    <a href="/" class="mt-back"><svg class="mt-icon"><use href="#i-back"/></svg>Back to Dashboard</a>
+
+    <div class="mt-panel is-<%= _state %>">
+      <div class="mt-panel-head">
+        <h2 class="mt-panel-name"><%= magazine.clientName %></h2>
+        <span class="mt-pill"><%= _label %></span>
+      </div>
+
+      <dl class="mt-facts">
+        <div><dt>Employee Name</dt><dd><%= magazine.employeeName %></dd></div>
+        <div><dt>Client Mobile</dt><dd><%= magazine.clientMobile %></dd></div>
+        <div><dt>Cover Page Volume No</dt><dd><%= magazine.volumeNo || '-' %></dd></div>
+        <div><dt>Slot No</dt><dd><%= magazine.slotNo || '-' %></dd></div>
+        <div><dt>Final Status</dt><dd class="<%= magazine.finalStatus === 'Delivered' ? 'is-good' : 'is-bad' %>"><%= magazine.finalStatus %></dd></div>
+      </dl>
+
+      <% if (magazine.status === 'In Progress') { %>
+        <div class="mt-callout is-warn">
+          <svg class="mt-icon"><use href="#i-printer"/></svg>
+          <span>The magazine is currently being printed. Tracking details will appear here once it is printed.</span>
+        </div>
+      <% } else { %>
+        <div class="mt-tracking-wrap">
+          <h3 class="mt-section-title"><svg class="mt-icon"><use href="#i-truck"/></svg>India Post Tracking</h3>
+          <p class="mt-section-sub">Tracking Number: <span class="mono"><%= magazine.trackingNumber || '-' %></span></p>
+
+          <% const t = magazine.currentStatus || {}; %>
+          <% if (t.error) { %>
+            <div class="mt-callout is-error">
+              <span>Details not found right now. Please check directly on India Post:</span>
+              <a href="<%= t.indiaPostLink || 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx' %>"
+                 target="_blank" rel="noopener noreferrer">
+                Track on India Post (enter: <span class="mono"><%= magazine.trackingNumber %></span>)
+              </a>
+            </div>
+
+            <% if (magazine.finalStatus !== 'Delivered') { %>
+              <div class="mt-confirm">
+                <span>Already checked on India Post and it's delivered?</span>
+                <form method="POST" action="/mark-delivered/<%= magazine._id %>" onsubmit="return confirm('Mark this as Delivered? Only confirm this if you have verified it on India Post or with the client.');">
+                  <button type="submit" class="mt-btn mt-btn-success mt-btn-sm">
+                    <svg class="mt-icon"><use href="#i-check"/></svg>Mark as Delivered
+                  </button>
+                </form>
+              </div>
+            <% } %>
+          <% } else if (t.summary) { %>
+            <%- include('../partials/trackingStepper', { t }) %>
+
+            <% if (t.lastFetchedAt) { %>
+              <p class="mt-fetched">Last fetched: <%= new Date(t.lastFetchedAt).toLocaleString('en-IN') %></p>
+            <% } %>
+
+            <% if (magazine.finalStatus !== 'Delivered') { %>
+              <div class="mt-confirm is-plain">
+                <span>Status not updating, but you know it has actually been delivered (checked on India Post or with the client)?</span>
+                <form method="POST" action="/mark-delivered/<%= magazine._id %>" onsubmit="return confirm('Mark this as Delivered? Only confirm this if you have verified it on India Post or with the client.');">
+                  <button type="submit" class="mt-btn mt-btn-success mt-btn-sm">
+                    <svg class="mt-icon"><use href="#i-check"/></svg>Mark as Delivered
+                  </button>
+                </form>
+              </div>
+            <% } %>
+          <% } else { %>
+            <div class="mt-callout is-muted">Tracking details have not been fetched yet. Use “Fetch Details” in the Admin Panel to load the latest tracking information.</div>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

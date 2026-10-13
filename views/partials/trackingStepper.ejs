@@ -1,0 +1,157 @@
+<%
+  const chrono = Array.isArray(t.historyChronological)
+    ? t.historyChronological
+    : (Array.isArray(t.history) ? [...t.history].reverse() : []);
+
+  const esc = (value) => value === null || value === undefined ? '' : String(value);
+  const valueOrDash = (value) => value !== null && value !== undefined && String(value).trim() !== '' ? String(value) : '—';
+  const stageLabels = Array.isArray(t.stageLabels) && t.stageLabels.length
+    ? t.stageLabels
+    : ['Booked', 'Dispatched', 'In Transit', 'Out for Delivery', 'Delivered'];
+  const stage = typeof t.stage === 'number' ? t.stage : -1;
+  const trackingNumber = valueOrDash(t.trackingNumber);
+  const details = [
+    ['Article Number', t.trackingNumber],
+    ['Article Type', t.articleType],
+    ['Tariff', t.tariff],
+    ['Booked At', t.bookedAt || t.originCity],
+    ['Booked On', t.bookedOn],
+    ['Destination', t.destinationCity],
+    ['Origin Pincode', t.originPincode],
+    ['Delivered On', t.deliveredOn],
+    ['Destination Pincode', t.destinationPincode],
+  ];
+  const statusText = valueOrDash(t.summary || t.statusCode);
+  const latestLocation = valueOrDash(t.currentLocation);
+  const usage = t.apiUsage || {};
+%>
+
+<div class="tracking-card" id="tracking-card-<%= esc(t.trackingNumber).replace(/[^a-zA-Z0-9_-]/g, '') %>">
+  <div class="tracking-card-header">
+    <div>
+      <div class="tracking-eyebrow">India Post Tracking</div>
+      <p class="tracking-consignment">Consignment No: <strong><%= trackingNumber %></strong></p>
+    </div>
+    <button type="button" class="tracking-print-btn" onclick="window.print()">🖨️ Print Report</button>
+  </div>
+
+  <div class="tracking-current-status <%= /delivered/i.test(statusText) ? 'is-delivered' : '' %>">
+    <span class="tracking-status-dot"></span>
+    <span><%= statusText %></span>
+  </div>
+
+  <% if (stage >= 0) { %>
+    <div class="tracking-progress" aria-label="Shipment progress">
+      <% stageLabels.forEach((label, i) => { const reached = i <= stage; %>
+        <div class="tracking-progress-item <%= reached ? 'is-reached' : '' %>">
+          <div class="tracking-progress-circle"><%= reached ? '✓' : (i + 1) %></div>
+          <span><%= label %></span>
+        </div>
+        <% if (i < stageLabels.length - 1) { %>
+          <div class="tracking-progress-line <%= i < stage ? 'is-reached' : '' %>"></div>
+        <% } %>
+      <% }) %>
+    </div>
+  <% } %>
+
+
+
+  
+  <div class="tracking-route">
+    <div class="tracking-route-point">
+      <span class="tracking-route-dot"></span>
+      <div>
+        <span class="tracking-route-label">Booked at</span>
+        <strong><%= valueOrDash(t.bookedAt || t.originCity) %></strong>
+        <% if (t.originPincode) { %><small><%= t.originPincode %></small><% } %>
+      </div>
+    </div>
+    <div class="tracking-route-arrow" aria-hidden="true">→</div>
+    <div class="tracking-route-point tracking-route-destination">
+      <div>
+        <span class="tracking-route-label">Destination</span>
+        <strong><%= valueOrDash(t.destinationCity) %></strong>
+        <% if (t.destinationPincode) { %><small><%= t.destinationPincode %></small><% } %>
+      </div>
+      <span class="tracking-route-dot"></span>
+    </div>
+  </div>
+
+  <div class="tracking-details-grid">
+    <% details.forEach(([label, value]) => { %>
+      <div class="tracking-detail-cell">
+        <span class="tracking-detail-label"><%= label %></span>
+        <strong class="tracking-detail-value"><%= valueOrDash(value) %></strong>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="tracking-meta-grid">
+    <div class="tracking-meta-cell">
+      <span>Current Status</span>
+      <strong><%= statusText %></strong>
+    </div>
+    <div class="tracking-meta-cell">
+      <span>Latest Location</span>
+      <strong><%= latestLocation %></strong>
+    </div>
+    <div class="tracking-meta-cell">
+      <span>Service / Courier</span>
+      <strong><%= valueOrDash(t.service || t.courier) %></strong>
+    </div>
+    <div class="tracking-meta-cell">
+      <span>Tracking Provider</span>
+      <strong><%= valueOrDash(t.provider) %></strong>
+    </div>
+  </div>
+
+  <% if (t.additionalInfo) { %>
+    <div class="tracking-additional-info">
+      <span>Postal Information</span>
+      <strong><%= t.additionalInfo %></strong>
+    </div>
+  <% } %>
+
+  <div class="tracking-section-title">
+    <span>Routing Steps</span>
+    <small><%= chrono.length %> update<%= chrono.length === 1 ? '' : 's' %></small>
+  </div>
+
+  <% if (chrono.length) { %>
+    <div class="tracking-timeline">
+      <% chrono.forEach((h, index) => {
+        const status = h.status || 'Tracking update';
+        const state = String(h.state || '').toLowerCase();
+        const isDelivered = /delivered/i.test(status) || state === 'delivered';
+        const isOut = /out for delivery|taken out/i.test(status) || state === 'outfordelivery';
+        const isBooked = /booked/i.test(status) || state === 'inforeceived';
+      %>
+        <div class="tracking-event <%= isDelivered ? 'is-delivered' : '' %>">
+          <div class="tracking-event-date">
+            <strong><%= h.date || '—' %></strong>
+          </div>
+          <div class="tracking-event-marker">
+            <span><%= isDelivered ? '✓' : (isOut ? '🚚' : (isBooked ? '✓' : '•')) %></span>
+          </div>
+          <div class="tracking-event-content">
+            <strong><%= status %></strong>
+            <% if (h.location) { %>
+              <span>📍 <%= h.location %></span>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="tracking-no-events">No routing updates are available yet.</div>
+  <% } %>
+
+  <div class="tracking-footer-row">
+    <% if (usage && (usage.used !== undefined || usage.quota !== undefined)) { %>
+      <span>API usage: <strong><%= valueOrDash(usage.used) %>/<%= valueOrDash(usage.quota) %></strong></span>
+    <% } %>
+    <% if (t.lastFetchedAt) { %>
+      <span>Last fetched: <strong><%= new Date(t.lastFetchedAt).toLocaleString('en-IN') %></strong></span>
+    <% } %>
+  </div>
+</div>

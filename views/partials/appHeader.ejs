@@ -1,0 +1,39 @@
+<%
+  /* Header with a time-based greeting and the signed-in user's name.
+     Server renders an India-time greeting first; /js/greeting.js then
+     switches it to the visitor's own clock. */
+  var _variant = (typeof headerVariant !== 'undefined' && headerVariant === 'employee') ? 'employee' : 'admin';
+  var _name = (typeof headerName !== 'undefined' && headerName) ? String(headerName) : '';
+  var _initial = _name ? _name.trim().charAt(0).toUpperCase() : '?';
+  var _hour = parseInt(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Kolkata' }).format(new Date()), 10);
+  var _greeting = (_hour >= 5 && _hour < 12) ? 'Good Morning' : ((_hour >= 12 && _hour < 17) ? 'Good Afternoon' : 'Good Evening');
+  var _today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' });
+%>
+<header class="mt-header is-<%= _variant %>">
+  <div class="mt-header-inner">
+    <% if (_variant === 'employee') { %>
+      <a href="/" class="mt-brand">
+        <span class="mt-mark"><svg class="mt-icon"><use href="#i-book"/></svg></span>
+        <span class="mt-brand-name">Magazine Tracker</span>
+      </a>
+    <% } %>
+
+    <div class="mt-greeting">
+      <span class="mt-greeting-hello" data-greeting><%= _greeting %></span>
+      <span class="mt-greeting-name"><%= _name %></span>
+    </div>
+
+    <div class="mt-header-right">
+      <span class="mt-date" data-today><%= _today %></span>
+      <span class="mt-avatar" aria-hidden="true"><%= _initial %></span>
+      <% if (_variant === 'employee') { %>
+        <form method="POST" action="/logout" style="margin:0">
+          <button type="submit" class="mt-header-logout">
+            <svg class="mt-icon"><use href="#i-logout"/></svg><span>Logout</span>
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</header>
+<script src="/js/greeting.js" defer></script>

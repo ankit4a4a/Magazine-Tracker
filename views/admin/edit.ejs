@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Edit Magazine - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'all' %>
+    <%- include('../partials/adminSidebar') %>
+
+    
+    <main class="flex-1 min-w-0 p-8">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6">Edit Magazine Entry</h1>
+
+      <% if (error) { %>
+        <div class="bg-red-100 text-red-700 text-sm px-3 py-2 rounded mb-4 max-w-xl"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/admin/edit/<%= magazine._id %>" id="magazineForm" class="bg-white rounded-xl shadow p-6 max-w-xl space-y-4">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
+          <select name="employeeId" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="" disabled <%= !magazine.userId ? 'selected' : '' %>>Select an employee...</option>
+            <% users.forEach(u => { %>
+              <option value="<%= u._id %>" <%= (magazine.userId && magazine.userId.toString() === u._id.toString()) ? 'selected' : '' %>>
+                <%= u.name %> (<%= u.phone %>)
+              </option>
+            <% }) %>
+          </select>
+          <% if (!magazine.userId) { %>
+            <p class="text-xs text-amber-600 mt-1">This entry has no linked user yet (old record: "<%= magazine.employeeName %>"). Please select one.</p>
+          <% } %>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+          <input type="text" name="clientName" value="<%= magazine.clientName %>" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Client Mobile Number</label>
+          <input type="text" name="clientMobile" value="<%= magazine.clientMobile %>" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Magazine Cover Page Volume No</label>
+            <input type="text" name="volumeNo" value="<%= magazine.volumeNo %>"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Slot No</label>
+            <input type="text" name="slotNo" value="<%= magazine.slotNo %>"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" id="statusSelect"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="In Progress" <%= magazine.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+            <option value="Printed" <%= magazine.status === 'Printed' ? 'selected' : '' %>>Printed</option>
+          </select>
+        </div>
+
+        <div id="trackingField" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tracking Number (India Post)</label>
+          <div class="flex gap-2">
+            <input type="text" name="trackingNumber" id="trackingNumberInput" value="<%= magazine.trackingNumber %>" placeholder="e.g. EE123456789IN"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button type="button" id="fetchBtn"
+              class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap">
+              🔍 Fetch Details
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">If you change the tracking number, click “Fetch Details” to load the latest status in the preview.</p>
+
+          <div id="trackingPreview" class="mt-3 <%= (magazine.currentStatus && magazine.currentStatus.summary) ? '' : 'hidden' %>">
+            <% if (magazine.currentStatus && magazine.currentStatus.summary) { %>
+              <%- include('../partials/trackingStepper', { t: magazine.currentStatus }) %>
+              <p class="text-xs text-gray-400 mt-1">(Already fetched earlier — saved in database)</p>
+            <% } %>
+          </div>
+
+          <input type="hidden" name="fetchedStatusJson" id="fetchedStatusJson" value="" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Final Status</label>
+          <select name="finalStatus"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="Not Delivered" <%= magazine.finalStatus === 'Not Delivered' ? 'selected' : '' %>>Not Delivered</option>
+            <option value="Delivered" <%= magazine.finalStatus === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+          </select>
+        </div>
+
+        <button type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-lg">
+          Update Entry
+        </button>
+      </form>
+    </main>
+  </div>
+
+  <script src="/js/tracking-stepper.js"></script>
+  <script>
+    const statusSelect = document.getElementById('statusSelect');
+    const trackingField = document.getElementById('trackingField');
+    const trackingNumberInput = document.getElementById('trackingNumberInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const trackingPreview = document.getElementById('trackingPreview');
+    const fetchedStatusJson = document.getElementById('fetchedStatusJson');
+
+    function toggleTrackingField() {
+      if (statusSelect.value === 'Printed') {
+        trackingField.classList.remove('hidden');
+      } else {
+        trackingField.classList.add('hidden');
+      }
+    }
+    statusSelect.addEventListener('change', toggleTrackingField);
+    toggleTrackingField();
+
+    trackingNumberInput.addEventListener('input', () => {
+      fetchedStatusJson.value = '';
+      trackingPreview.classList.add('hidden');
+      trackingPreview.innerHTML = '';
+    });
+
+    fetchBtn.addEventListener('click', async () => {
+      const trackingNumber = trackingNumberInput.value.trim();
+      if (!trackingNumber) {
+        alert('Please enter a tracking number first.');
+        return;
+      }
+
+      fetchBtn.disabled = true;
+      fetchBtn.textContent = '⏳ Fetching...';
+      trackingPreview.classList.remove('hidden');
+      trackingPreview.innerHTML = '<p class="text-sm text-gray-400">Fetching India Post status...</p>';
+
+      try {
+        const res = await fetch(
+          '/admin/api/track/' + encodeURIComponent(trackingNumber) + '?t=' + Date.now(),
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+
+        fetchedStatusJson.value = JSON.stringify(data);
+
+        if (data.error) {
+          trackingPreview.replaceChildren();
+          const errorBox = document.createElement('div');
+          errorBox.className = 'bg-red-50 text-red-700 text-sm rounded-lg p-3';
+          errorBox.textContent = '⚠️ ' + data.error;
+          trackingPreview.appendChild(errorBox);
+        } else {
+          trackingPreview.replaceChildren(renderTrackingStepperCard(data));
+        }
+      } catch (err) {
+        trackingPreview.replaceChildren();
+        const errorBox = document.createElement('div');
+        errorBox.className = 'bg-red-50 text-red-700 text-sm rounded-lg p-3';
+        errorBox.textContent = '⚠️ Fetch failed: ' + err.message;
+        trackingPreview.appendChild(errorBox);
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.textContent = '🔍 Fetch Details';
+      }
+    });
+  </script>
+</body>
+</html>

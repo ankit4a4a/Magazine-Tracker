@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Employee Dashboard - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <%- include('../partials/iconSprite') %>
+  <%- include('../partials/appHeader', { headerName: userName, headerVariant: 'employee' }) %>
+
+  <%
+    var stateOf = function (m) {
+      if (m.status !== 'Printed') return 'progress';
+      return m.finalStatus === 'Delivered' ? 'delivered' : 'transit';
+    };
+    var stateLabel = { progress: 'In Progress', transit: 'On the way', delivered: 'Delivered' };
+    var counts = { progress: 0, transit: 0, delivered: 0 };
+    magazines.forEach(function (m) { counts[stateOf(m)]++; });
+    var total = magazines.length;
+  %>
+
+  <main class="mt-container">
+
+    <section class="mt-hero is-compact" aria-label="Your clients at a glance">
+      <div class="mt-hero-top">
+        <div>
+          <p class="mt-hero-label">My Clients</p>
+          <p class="mt-hero-number"><%= total %></p>
+        </div>
+      </div>
+
+      <div class="mt-pipeline" role="img"
+           aria-label="<%= counts.progress %> in progress, <%= counts.transit %> on the way, <%= counts.delivered %> delivered">
+        <% if (counts.progress > 0) { %><span class="mt-seg is-progress" style="--n: <%= counts.progress %>; --d: 0s"></span><% } %>
+        <% if (counts.transit > 0) { %><span class="mt-seg is-transit" style="--n: <%= counts.transit %>; --d: .12s"></span><% } %>
+        <% if (counts.delivered > 0) { %><span class="mt-seg is-delivered" style="--n: <%= counts.delivered %>; --d: .24s"></span><% } %>
+      </div>
+
+      <div class="mt-stages">
+        <div class="mt-stage is-progress">
+          <span class="mt-stage-label">In Progress</span>
+          <span class="mt-stage-number"><%= counts.progress %></span>
+          <span class="mt-stage-desc">Being printed</span>
+        </div>
+        <div class="mt-stage is-transit">
+          <span class="mt-stage-label">On the way</span>
+          <span class="mt-stage-number"><%= counts.transit %></span>
+          <span class="mt-stage-desc">Printed, not delivered yet</span>
+        </div>
+        <div class="mt-stage is-delivered">
+          <span class="mt-stage-label">Delivered</span>
+          <span class="mt-stage-number"><%= counts.delivered %></span>
+          <span class="mt-stage-desc">Reached the client</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-toolbar">
+      <div class="mt-tabs" role="tablist" aria-label="Magazine menu">
+        <button type="button" class="mt-tab" role="tab" data-tab="all" aria-selected="true">All Magazines</button>
+        <button type="button" class="mt-tab" role="tab" data-tab="in-progress" aria-selected="false">In Progress</button>
+        <button type="button" class="mt-tab" role="tab" data-tab="delivered" aria-selected="false">Delivered</button>
+      </div>
+
+      <form method="GET" action="/" class="mt-search" id="mtSearch" role="search">
+        <label class="mt-search-field">
+          <svg class="mt-icon"><use href="#i-search"/></svg>
+          <input type="text" name="q" value="<%= q %>" placeholder="Search name or mobile number" aria-label="Search your clients" />
+        </label>
+        <button type="submit" class="mt-btn mt-btn-primary">Search</button>
+      </form>
+    </div>
+
+    <div class="mt-grid" id="mtGrid">
+      <% magazines.forEach(function (m) {
+           var state = stateOf(m);
+           var step = state === 'progress' ? 0 : (state === 'transit' ? 1 : 2);
+           var latest = (m.currentStatus && m.currentStatus.summary) ? m.currentStatus.summary : '';
+      %>
+        <a href="/view/<%= m._id %>" class="mt-card is-<%= state %>" data-state="<%= state === 'progress' ? 'in-progress' : (state === 'delivered' ? 'delivered' : 'on-the-way') %>">
+          <div class="mt-card-head">
+            <div class="mt-card-title">
+              <span class="mt-ref">#<%= m._id.toString().slice(-4).toUpperCase() %></span>
+              <h3 class="mt-card-name"><%= m.clientName %></h3>
+              <p class="mt-card-phone"><svg class="mt-icon"><use href="#i-phone"/></svg><%= m.clientMobile %></p>
+            </div>
+            <span class="mt-pill"><%= stateLabel[state] %></span>
+          </div>
+
+          <dl class="mt-facts">
+            <div><dt>Volume No</dt><dd><%= m.volumeNo || '-' %></dd></div>
+            <div><dt>Slot No</dt><dd><%= m.slotNo || '-' %></dd></div>
+            <div><dt>Added On</dt><dd class="is-date"><%= m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '-' %></dd></div>
+          </dl>
+
+          <ol class="mt-track" aria-label="Progress: <%= stateLabel[state] %>">
+            <li class="<%= step > 0 ? 'is-done' : 'is-current' %>">Printing</li>
+            <li class="<%= step > 1 ? 'is-done' : (step === 1 ? 'is-current' : '') %>">On the way</li>
+            <li class="<%= step === 2 ? 'is-current' : '' %>">Delivered</li>
+          </ol>
+
+          <p class="mt-note">
+            <% if (state === 'progress') { %>
+              <strong>Magazine is currently being printed</strong>
+            <% } else if (state === 'transit') { %>
+              <strong>Printed, now being delivered</strong>
+              <% if (latest) { %>Latest: <%= latest %><% } %>
+            <% } else { %>
+              <strong>Delivered to the client</strong>
+              <% if (latest) { %><%= latest %><% } %>
+            <% } %>
+          </p>
+
+          <p class="mt-card-foot">Handled by <strong><%= m.employeeName %></strong></p>
+        </a>
+      <% }) %>
+
+      <div class="mt-empty" id="mtEmpty" <%= total === 0 ? '' : 'hidden' %>>
+        <strong id="mtEmptyTitle">No clients found.</strong>
+        <span id="mtEmptyHint"><%= q ? 'Try a different name or mobile number.' : 'New clients added for you will show up here.' %></span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.mt-tab'));
+      var cards = Array.prototype.slice.call(document.querySelectorAll('#mtGrid .mt-card'));
+      var empty = document.getElementById('mtEmpty');
+      var emptyTitle = document.getElementById('mtEmptyTitle');
+      var emptyHint = document.getElementById('mtEmptyHint');
+      var search = document.getElementById('mtSearch');
+      var messages = {
+        'all': 'No clients found.',
+        'in-progress': 'No magazines in progress.',
+        'delivered': 'No delivered magazines yet.'
+      };
+      var current = 'all';
+
+      function show(key, updateHash) {
+        if (!messages[key]) key = 'all';
+        current = key;
+        var visible = 0;
+        cards.forEach(function (card) {
+          var match = key === 'all' || card.getAttribute('data-state') === key;
+          card.hidden = !match;
+          if (match) visible++;
+        });
+        tabs.forEach(function (tab) {
+          tab.setAttribute('aria-selected', tab.getAttribute('data-tab') === key ? 'true' : 'false');
+        });
+        if (visible === 0) {
+          emptyTitle.textContent = messages[key];
+          if (key !== 'all') emptyHint.textContent = 'Magazines will appear here as their status changes.';
+          empty.hidden = false;
+        } else {
+          empty.hidden = true;
+        }
+        if (updateHash && window.history && history.replaceState) {
+          history.replaceState(null, '', key === 'all' ? location.pathname + location.search : '#' + key);
+        }
+      }
+
+      tabs.forEach(function (tab, i) {
+        tab.addEventListener('click', function () { show(tab.getAttribute('data-tab'), true); });
+        tab.addEventListener('keydown', function (e) {
+          var next = e.key === 'ArrowRight' ? i + 1 : (e.key === 'ArrowLeft' ? i - 1 : null);
+          if (next === null) return;
+          var target = tabs[(next + tabs.length) % tabs.length];
+          target.focus();
+          show(target.getAttribute('data-tab'), true);
+        });
+      });
+
+      if (search) {
+        search.addEventListener('submit', function () {
+          search.action = '/' + (current === 'all' ? '' : '#' + current);
+        });
+      }
+
+      show((location.hash || '').replace('#', ''), false);
+    })();
+  </script>
+</body>
+</html>

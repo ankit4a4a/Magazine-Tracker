@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title><%= magazine.clientName %> - Tracking Details</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'all' %>
+    <%- include('../partials/adminSidebar') %>
+
+    
+    <main class="flex-1 min-w-0 p-6 md:p-8">
+      <div class="max-w-5xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Admin / Tracking</p>
+            <h1 class="text-2xl font-bold text-gray-800 mt-1"><%= magazine.clientName %></h1>
+            <p class="text-sm text-gray-500 mt-1">Employee: <strong><%= magazine.employeeName %></strong> · Tracking: <span class="font-mono"><%= magazine.trackingNumber || '-' %></span></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/admin/edit/<%= magazine._id %>" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">✏️ Edit</a>
+            <a href="/admin/list/all" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">← Back</a>
+          </div>
+        </div>
+
+        <% if (magazine.status === 'In Progress') { %>
+          <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-5 text-sm">
+            🖨️ The magazine is currently being printed. Tracking details will appear here once it is printed.
+          </div>
+        <% } else if (!magazine.trackingNumber) { %>
+          <div class="bg-gray-50 border border-gray-200 text-gray-600 rounded-xl p-5 text-sm">
+            No tracking number is available for this entry.
+          </div>
+        <% } else { %>
+          <% const t = magazine.currentStatus || {}; %>
+          <% if (t.error) { %>
+            <div class="bg-red-50 border border-red-100 text-red-700 rounded-xl p-5 text-sm">⚠️ <%= t.error %></div>
+          <% } else if (t.summary || t.trackingNumber) { %>
+            <%- include('../partials/trackingStepper', { t }) %>
+          <% } else { %>
+            <div class="bg-gray-50 border border-gray-200 text-gray-600 rounded-xl p-5 text-sm">
+              Tracking details have not been fetched yet. Use Edit or Refresh to fetch the latest tracking information.
+            </div>
+          <% } %>
+        <% } %>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Tracking API Usage - Magazine Tracker</title>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <%- include('../partials/bgVideo') %>
+  <div class="flex min-h-screen w-full">
+    <% var active = 'dashboard' %>
+    <%- include('../partials/adminSidebar') %>
+
+    
+    <main class="flex-1 min-w-0 p-6 md:p-8">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Admin / Tracking</p>
+            <h1 class="text-2xl font-bold text-gray-800 mt-1">Tracking API Key Usage</h1>
+            <p class="text-sm text-gray-500 mt-1">TrackCourier and 17TRACK keys are each used automatically in order. When a key reaches its quota or becomes invalid, the next available key for that provider is used.</p>
+          </div>
+          <a href="/admin/dashboard" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">← Dashboard</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <% if (!keys.length) { %>
+            <div class="col-span-full bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-5">
+              No TrackCourier or 17TRACK API keys are configured.
+            </div>
+          <% } %>
+          <% keys.forEach((key) => { %>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="font-bold text-gray-800"><%= key.label %></h2>
+                <% if (key.disabled) { %>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700">Invalid</span>
+                <% } else if (key.exhausted) { %>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">Exhausted</span>
+                <% } else { %>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">Available</span>
+                <% } %>
+              </div>
+              <div class="mt-4 flex items-end justify-between">
+                <div>
+                  <p class="text-xs text-gray-500">Requests used</p>
+                  <p class="text-2xl font-bold text-gray-900"><%= key.used %> <span class="text-sm font-medium text-gray-400">/ <%= key.quota %></span></p>
+                </div>
+                <p class="text-sm font-semibold text-gray-600"><%= key.remaining %> left</p>
+              </div>
+              <div class="h-2 bg-gray-100 rounded-full mt-4 overflow-hidden">
+                <div class="h-full bg-indigo-500" style="width:<%= key.percent %>%"></div>
+              </div>
+              <% if (key.lastUsedAt) { %>
+                <p class="text-xs text-gray-400 mt-3">Last used: <%= new Date(key.lastUsedAt).toLocaleString('en-IN') %></p>
+              <% } %>
+              <% if (key.lastError) { %>
+                <p class="text-xs text-red-500 mt-2"><%= key.lastError %></p>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
