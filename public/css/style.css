@@ -689,7 +689,7 @@ a.mt-card:hover { border-color: var(--state); box-shadow: var(--shadow-2); }
   --glass-border: rgba(255, 255, 255, .24);
   --glass-blur: blur(20px) saturate(1.6);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
-  --overlay: rgba(0, 0, 0, .50);   /* black overlay on the video */
+  --overlay: rgba(0, 0, 0, .60);   /* black overlay on the video */
 
   /* re-map the design tokens so every existing component turns glass */
   --paper: transparent;
